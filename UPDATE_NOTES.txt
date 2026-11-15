@@ -1,0 +1,458 @@
+╔══════════════════════════════════════════════════════════════════════╗
+║          COSMIC RUN – BEYOND THE UNIVERSE                           ║
+║          PREMIUM EDITION · CHANGE LOG                               ║
+╚══════════════════════════════════════════════════════════════════════╝
+
+VERSION: PREMIUM 3.0 (Hackathon Edition)
+DATE: 2026-11-15
+BUILD: Single-file HTML, 219KB (source) / 564KB minified (Vite)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▶ ARCHITECTURE OVERHAUL
+  ─────────────────────
+  • Introduced generate_premium_game.py as the MASTER SOURCE FILE
+    — All game code is authored in the Python generator, which writes
+      a fully self-contained index.html on each run.
+  • build_cosmic_run.py refactored to thin 10-line wrapper that
+    delegates entirely to generate_premium_game.py.
+  • Vite 6.4.6 dev server + production build pipeline retained.
+    npm run build produces dist/ with gzipped JS (~147 KB).
+  • Three.js 0.170.0 loaded via ES importmap from esm.sh CDN —
+    no local copy needed.
+
+▶ 3D ENVIRONMENT IMPROVEMENTS
+  ────────────────────────────
+  • 10 distinct sector environments (Earth → Deep Space Heliopause)
+    with per-sector background color, fog, sun light color/intensity,
+    and planet configuration.
+  • Procedural planet texture generation using Canvas 2D:
+    — Earth: continent blobs, ocean, Greenland ice, storm swirls,
+      city-light glitter layer, Rayleigh atmospheric halo.
+    — Moon: crater fields with shadow gradients.
+    — Mars: rust red with darker terrain patches.
+    — Jupiter: banded cloud belts with Great Red Spot ellipse.
+    — Saturn: ring system (torus geometry, opacity-mapped).
+    — Gas giants, ice giants with layered gradient textures.
+  • ISS Space Station mesh: main body + 4 solar panel wings with
+    orbit animation in Earth hangar scene.
+  • Earth cloud sphere: separate semi-transparent cloud layer with
+    offset rotation for parallax effect.
+  • 180-particle space dust system: streaks toward camera at speed-
+    scaled velocity; hidden in hangar, visible during flight.
+  • Hyperspace Warp Gate portals: torus geometry + wireframe ring,
+    animated rotation, spawns 80 units ahead of ship at sector
+    threshold, triggers sector transition on pass-through.
+  • 400 procedurally placed star field (Points geometry).
+
+▶ SPACESHIP MODELS (5 SHIPS)
+  ──────────────────────────
+  • Orion X-1: Classic delta interceptor (balanced stats)
+  • Valkyrie: Forward-swept wing fighter (+speed, 1.08× bonus)
+  • Aurora: Faceted lifting body with angled surfaces (+agility)
+  • Titan: Twin-hull catamaran with cross-bracing (+1 shield pip)
+  • Quantum: Needle-thin hull with animated torus rings (+magnet)
+  • All ships: dual-layer engine flames (outer envelope + white core)
+    with dynamic scale pulsing (boost = 2.4× scale)
+  • Hangar drag rotation: mousedown/move enables 3D ship inspection
+  • Aerodynamic banking: roll on lane change, pitch on jump/dive
+  • Ships purchasable with in-game coins; persistent across sessions
+
+▶ GAMEPLAY MECHANICS
+  ──────────────────
+  • 3-lane system (left/center/right) with smooth X interpolation
+  • Vertical jump (Y=+5.5) and dive (Y=-1.5) with spring return
+  • Nitro Boost: 1.75× speed multiplier + shield immunity
+  • 3 obstacle types: rotating asteroids, spinning debris, lasers
+  • Energy gates: score bonus on clean pass-through
+  • 4 power-up types: Boost, Shield, Coin Magnet, Score Doubler
+  • Each power-up has 5 upgrade levels in the Upgrade Bay
+  • Safe breathing zones: guaranteed gap every 3 chunks
+
+▶ NEAR-MISS & COMBO SYSTEM
+  ──────────────────────────
+  • Near-miss detection: side-pass within 1.4–2.6 units dx from obstacle
+  • Combo multiplier builds 1× → 5× on consecutive near-misses
+  • Combo resets to 1× on any collision
+  • Near-miss toast shows "+N PTS" scaled to current combo level
+  • Combo badge (2× COMBO 🔥 through 5× COMBO 🔥) in HUD
+
+▶ LEVEL PROGRESSION
+  ──────────────────
+  • 10 sectors with progressive warp distance thresholds
+  • Sector Progress Bar in HUD shows % to next warp gate
+  • Warp portal spawns 80M before threshold, waits at center lane
+  • Passing portal triggers: sector switch, planet rebuild, speed ramp,
+    hyperspace sound, camera shake, XP reward, science toast
+  • Warp count tracked in career stats (totalWarps)
+  • Max combo tracked in career stats (maxCombo)
+
+▶ MISSIONS SYSTEM
+  ──────────────
+  • Random mission per run: reach X distance OR collect X coins
+  • Mission tracker visible in HUD (progress bar + objective text)
+  • Auto-detects both conditions satisfied simultaneously
+  • Reward on completion: +100 Coins + +200 XP (toast notification)
+  • Single claim per run (runMissionClaimed flag)
+
+▶ NASA SCIENCE INTEGRATION
+  ──────────────────────────
+  • ENCYCLOPEDIA_DATA: authentic planetary fact sheets for 10 bodies
+    sourced from NASA Goddard / JPL / ESA / JWST mission archives
+  • triggerContextualScienceFact(): fires every 28 seconds during
+    active flight, pulls facts from ENCYCLOPEDIA_DATA for active sector
+  • 4 fact categories per body: Discovery, Dossier, Atmosphere, Orbital
+  • Science toast also fires on: level launch, warp transit, achievements,
+    rank promotion, power-up activation, demo tour stages
+  • NASA Solar System Encyclopedia modal: full fact sheets for all bodies
+  • NASA Research Challenges: in-game educational learning tasks
+  • 10 discovered planets tracked (discoveredPlanets array)
+
+▶ XP, RANKS & ACHIEVEMENTS
+  ───────────────────────────
+  • 10 Pilot Ranks (Flight Cadet → Supreme Celestial Legend) with XP
+    thresholds and bonus coin reward on promotion
+  • XP formula: runDistance × 0.45 + runCoins × 3 + nearMisses × 25
+  • 12 Achievements with icon, description, XP/coin rewards:
+    First Flight, Distance Runner, Coin Hoarder, Shield Bearer,
+    Sector Jumper, Combo Master, Near-Miss Artist, Multi-Sector,
+    Speed Racer, Ship Collector, Veteran Pilot, Planet Scanner
+  • Achievement unlock triggers science toast notification
+  • Rank promotion triggers science toast with bonus coins
+  • All progress persists to localStorage (key: COSMIC_RUN_BEYOND_SAVE)
+
+▶ LEADERBOARD
+  ────────────
+  • 9 simulated global pilots (diverse callsigns + ships + sectors)
+  • Player entry dynamically merged and table sorted by score
+  • Player row highlighted in cyan
+  • Pilot callsign editable in real-time (UPDATE button)
+  • Score reflects current session highScore
+
+▶ CAREER DASHBOARD (6 STATS)
+  ────────────────────────────
+  • Lifetime Distance (KM), Total Coins, Expeditions, Near-Misses,
+    Warp Jumps, Max Combo — all with formatted display
+
+▶ AUDIO ENGINE (ZERO EXTERNAL FILES)
+  ─────────────────────────────────
+  • SoundEngine: 8 procedural SFX via Web Audio API OscillatorNode
+    — playCoin: harmonic FM with combo pitch scaling
+    — playNearMiss: adrenaline sweep (880Hz → 1760Hz)
+    — playLaneSwitch: short directional click
+    — playJump: ascending glide (220Hz → 660Hz)
+    — playDive: descending plunge (660Hz → 180Hz)
+    — playPowerup: power chord triad (C-E-G) with reverb
+    — playWarpJump: bass thunder + harmonic climb
+    — playShieldDeflect: metallic triangle ping
+    — playCrash: low distorted impact
+    — updateEngine: continuous speed-scaled engine rumble
+  • MusicEngine: procedural synthwave loop
+    — Kick drum (sine-based, 60ms decay)
+    — Hi-hat (white noise bandpass)
+    — Bassline (sawtooth, 4-note walking bass)
+    — Cosmic arpeggio (sine, 16-note pattern)
+    — 3 modes: hangar (ambient), game (full beat), boost (high energy)
+    — Low-pass filter during pause (500Hz cutoff) for muffled effect
+  • SFX and music volume independently adjustable in pause menu
+
+▶ UI / CSS IMPROVEMENTS
+  ──────────────────────
+  • Main menu title: gradient shimmer + neon flicker animation
+  • Score display: cyan-to-purple gradient text with drop-shadow
+  • Launch button: pulse-soft breathing animation
+  • 7 new @keyframes: neonFlicker, titleShimmer, spinGlow,
+    hudScanLine, warpRipple, coinFloat (+ existing 5 preserved)
+  • Glassmorphism panels with rgba blur backgrounds
+  • Full responsiveness: 768px and 650px breakpoints
+  • Mobile touch buttons visible on coarse pointer or ≤900px
+  • 4-direction swipe gesture support
+  • Science toast styled with cyan accent bar + source attribution
+  • Near-miss toast auto-dismisses in 900ms
+  • Combo badge fades in/out with CSS transition
+
+▶ PERFORMANCE OPTIMIZATIONS
+  ──────────────────────────
+  • Max delta clamped to 50ms (prevents physics spiral of death)
+  • Obstacles & collectibles cleaned up when z > ship + 25
+  • Track chunks spawned on-demand (not pre-allocated)
+  • requestAnimationFrame loop with timestamp-based delta
+  • spaceDust BufferGeometry with needsUpdate flag on position
+  • Stars and planets only updated in hangar/pause (not each frame)
+  • disposedMeshes: geometry/material disposal on remove (future opt.)
+
+▶ BUG FIXES
+  ──────────
+  • FIXED: ReferenceError: curLvl is not defined in animate loop
+    (curLvl was only scoped in startRun, not the warp-progress
+    section of the animate loop — added const declaration at top
+    of the animate loop's flight section)
+  • FIXED: mainMenu visible over HUD in flight
+    (#mainMenu.hidden { display: none !important } CSS rule added)
+  • FIXED: Space dust appeared as large white boxes in hangar
+    (changed size 1.6→0.45, added starTex map, depthWrite:false,
+    spaceDust.visible=false in hangar, true in flight)
+  • FIXED: build_cosmic_run.py contained entire old HTML string
+    (refactored to 10-line delegation to generate_premium_game.py)
+  • FIXED: generate_premium_game.py had shell commands at EOF
+    (removed stray EOF and python3 invocation from file tail)
+  • FIXED: Flame cores (flameCoreL/R) were not scaled during flight
+    (added coreScale = flameScale × 0.45 with set() calls)
+
+▶ QA TEST ROUTES
+  ────────────────
+  ?test=flight      → start flight immediately
+  ?test=gameover    → start + immediately end run (see game-over screen)
+  ?test=pause       → start + immediately pause (see pause menu)
+  ?test=leaderboard → open leaderboard modal
+  ?test=hangar      → open fleet hangar modal
+  ?test=worlds      → open 10 sectors grid
+  ?test=upgrades    → open upgrade bay
+  ?test=achievements → open achievements modal
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERSION: ORIGINAL 1.0
+DATE: Pre-hackathon
+  • Basic Three.js runner with flat obstacles
+  • Single ship model
+  • No audio, no missions, no achievements
+  • No progression system
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERSION: 3.1 — FINAL POLISH PASS
+DATE: 2026-11-15
+  
+▶ NEW FEATURES
+  ──────────────
+  • WARP INCOMING HUD ALERT (#hudWarpAlert)
+    - Pulsing purple/magenta alert banner appears 380m before warp gate
+    - Animated warpAlertPulse glow effect
+    - Auto-hides when portal spawns (80m from gate)
+    - Cleaned up on endRun, startRun, and btnQuitToHangar
+  
+  • 4TH SHIELD PIP (pip4) FOR TITAN CLASS
+    - Added <div id="pip4"> to shield HUD (hidden by default)
+    - updateShieldPipsUI() now handles pip4; shows only for ships
+      with shieldBonus: 1 (runShieldPips = 4)
+  
+  • ENHANCED PLASMA LASER HURDLE
+    - Beam upgraded from MeshBasicMaterial → MeshStandardMaterial
+      with emissive:0xff0000, emissiveIntensity:1.2 for real glow
+    - Added wider halo glow mesh (BackSide material, opacity 0.18)
+    - Pylon tips upgraded with glowing spheres (emissiveIntensity:1.5)
+  
+  • SCIENCE FACT TIMER RESET ON WARP
+    - lastScienceFactTime resets when hyperspace jump completes
+    - Prevents double-trigger of science toast after warp
+
+  • DAILY BONUS updateMenuUI FIX
+    - Coin counter in top-right header now refreshes immediately
+      after claiming daily bonus (no need to close/reopen menu)
+
+▶ VALIDATION (v3.1 build health)
+  ────────────────────────────────
+  ✅ generate_premium_game.py → 228,963 bytes generated
+  ✅ npm run build → clean (566KB JS, 147KB gzipped)
+  ✅ node --check → ZERO syntax errors (160,680 chars JS)  
+  ✅ 108 getElementById calls, 116 IDs defined — 0 missing
+  ✅ Mobile layout (390×844) verified via screenshot
+  ✅ Desktop layout (1440×900) verified via screenshot
+  ✅ All 12 feature presence checks pass
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERSION: 3.2 — QA & POLISH EXCELLENCE PASS
+DATE: 2026-11-15
+  
+▶ NEW ENHANCEMENTS & BUG FIXES
+  ─────────────────────────────
+  • CANVAS LIVE TOUCH SWIPE CONTROLS
+    - Added touchmove swipe gesture listeners on renderer.domElement
+    - Responsive threshold (38px) for instant lane shifts, jump, and dive
+    - Protected modal scrolling from triggering in-flight actions
+  
+  • IN-FLIGHT DESKTOP CONTROLS BANNER (#hudControlsHint)
+    - Subtly displays [A/D] STEER · [W] JUMP · [S] DIVE · [SPACE] BOOST
+    - Fades away automatically after 5.5s of flight
+    - Responsive: hidden on mobile where touch HUD is active
+
+  • COMPREHENSIVE GAME-OVER TELEMETRY (6 STAT BOXES)
+    - Added Max Combo (goMaxCombo) and Warp Gates Cleared (goWarps)
+    - Added runMaxCombo tracker updated during near-miss streaks
+    - Accurately persists career best combo to gameState.stats.maxCombo
+
+  • AUDIO RESILIENCE & SYNTH MUTE SYNCHRONIZATION
+    - Auto-resumes Web Audio AudioContext across all browser policies
+    - toggleAudio() mutes/unmutes both SFX and procedural synth music
+    - Volume sliders and audio engine properly load saved volume levels
+
+  • KEYBOARD ACCELERATORS
+    - Press [R] or [Enter] on Game Over dialog for instant replay
+    - Fixed Pause menu controls hint text to match jump vs nitro boost
+
+▶ VALIDATION (v3.2 build health)
+  ────────────────────────────────
+  ✅ generate_premium_game.py → 234,875 bytes
+  ✅ index.html → 234,411 bytes
+  ✅ npm run build → clean production build (568KB JS, 147KB gzipped)
+  ✅ node --check → ZERO syntax errors (164,496 chars module JS)
+  ✅ 111 getElementById calls, 119 IDs defined — 0 missing
+  ✅ Dev server active at http://localhost:5173/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERSION: 4.0 — NASA SPACE EXPLORATION MISSION SYSTEM
+DATE: 2026-11-15
+BUILD: Single-file HTML, 274KB (source) / 579KB minified (Vite)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▶ NASA-INSPIRED MISSION DISTANCE & ASTRONOMICAL SCALING
+  ─────────────────────────────────────────────────────
+  • Live Mission Distance Counter in simulated kilometers:
+    - Dedicated HUD telemetry display (#hudMissionKmVal) paired with actual track meters.
+    - Track meters, mission kilometers, and flight score are fully separated.
+  • Piecewise continuous astronomical scaling engine (gameMetersToMissionKm):
+    - 🌍 Earth Departure / LEO: 0 m -> 0 km
+    - 🌕 Moon: 750 m -> 384,400 km reference distance
+    - 🟡 Venus: 1,800 m -> 42,000,000 km closest-approach reference
+    - 🔴 Mars: 3,000 m -> 54,600,000 km closest-approach reference
+    - 🪐 Jupiter: 5,500 m -> 588,500,000 km closest-approach reference
+    - ✨ Saturn: 8,000 m -> 1,200,000,000 km reference
+    - 🔷 Uranus: 11,000 m -> 2,600,000,000 km reference
+    - 🔵 Neptune: 14,000 m -> 4,300,000,000 km reference
+    - ⭐ Heliopause / Interstellar: 18,000 m -> 18,000,000,000 km boundary
+
+▶ VISUAL SOLAR SYSTEM MISSION PROGRESSION BAR
+  ────────────────────────────────────────────
+  • Interactive progression track (#hudSolarSystemStrip) pinned in flight HUD:
+    - System nodes for all 9 celestial exploration bodies.
+    - Dynamic progress fill bar (#hudSolarTrackFill) reflecting percentage traversed.
+    - Moving spacecraft indicator pin (#hudSolarShipIndicator) sliding along the track.
+    - Live readout: Current target, next destination, km remaining, and system completion %.
+    - Individual node statuses update to `.reached` upon passing planetary thresholds.
+
+▶ CINEMATIC PLANETARY MILESTONE BANNER
+  ────────────────────────────────────
+  • Pop-up orbital milestone banner (#nasaMilestoneBanner) on reaching each celestial body:
+    - Glowing celestial emblem and planetary iconography.
+    - Approximate reference distance and educational science dossier.
+    - Rewarded flight bonus points and pilot XP with sound effects.
+
+▶ NASA MISSION CONTROL DASHBOARD (#dashboardModal)
+  ────────────────────────────────────────────────
+  • High-tech flight telemetry command center:
+    - Lifetime Mission Distance in km & Track meters.
+    - High score & best flight records.
+    - Current destination & distance remaining to next milestone.
+    - Solar system completion percentage & total planets explored count.
+    - Interactive 9-card Planetary Exploration Milestones catalog (#dashMilestonesGrid).
+
+▶ FINAL MISSION SUMMARY REPORT (#gameOverModal)
+  ──────────────────────────────────────────────
+  • Professional NASA Deep Space Flight Archive debrief:
+    - Simulated kilometers travelled (#goMissionKm) & Track meters (#goTrackDistance).
+    - Total points earned (#goScore).
+    - Closest milestone achieved (#goClosestMilestone, #goClosestMilestoneDist).
+    - Distance remaining to next destination (#goNextMilestone, #goNextMilestoneRemain).
+    - Solar system completion percentage (#goMissionCompletion).
+    - Interactive planetary milestone status pills (#goMilestonesPills).
+
+▶ SCIENTIFIC ACCURACY & EDUCATIONAL DISCLAIMERS
+  ─────────────────────────────────────────────
+  • Prominently labeled astronomical reference values from NASA/JPL ephemeris.
+  • Clear educational simulation disclaimers across HUD, Mission Control, and Flight Debrief.
+
+▶ VALIDATION & BUILD HEALTH
+  ─────────────────────────
+  ✅ generate_premium_game.py → 279,331 bytes index.html generated
+  ✅ npm run build → clean production build (582KB JS, 151KB gzipped)
+  ✅ node --check → ZERO syntax errors
+  ✅ 183 getElementById calls, 183 matching HTML IDs — 0 missing
+  ✅ Dev server active at http://localhost:5173/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERSION: 4.1 — INTERACTIVE NASA DOSSIER DEEP-LINKING & POLISH
+DATE: 2026-11-15
+BUILD: Single-file HTML, 279KB (source) / 582KB minified (Vite)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▶ INTERACTIVE MISSION CONTROL → NASA ENCYCLOPEDIA DEEP-LINKING
+  ───────────────────────────────────────────────────────────
+  • Added interactive navigation from Mission Control milestone cards directly
+    into the NASA Space Encyclopedia:
+    - Each milestone card in #dashMilestonesGrid is hover-animated and clickable.
+    - Displays "🔍 TAP TO VIEW JPL DOSSIER →".
+    - Clicking any card immediately transitions to that specific celestial body
+      within the NASA Space Encyclopedia.
+  • Added interactive deep-linking from Game Over summary report:
+    - Clicking any planetary milestone pill (#goMilestonesPills) opens its full
+      NASA planetary science entry directly.
+
+▶ COMPLETE VENUS ENCOUNTER SCIENTIFIC DOSSIER
+  ──────────────────────────────────────────
+  • Added full authentic NASA/JPL telemetry for Venus in ENCYCLOPEDIA_DATA:
+    - Distance: 0.723 AU (108.2M km).
+    - Diameter: 12,104 km (95% Earth).
+    - Gravity: 8.87 m/s² (0.904 g).
+    - Atmosphere: 96.5% CO₂, 3.5% N₂, trace SO₂ clouds.
+    - Surface Temperature: 465°C / 870°F (Runaway greenhouse).
+    - Mission Insight: NASA Magellan radar mapping analysis.
+
+▶ DESKTOP KEYBOARD ACCELERATORS (HANGAR & MENUS)
+  ─────────────────────────────────────────────
+  • Added instant hotkeys when in main menu hangar:
+    - [M] — Open NASA Mission Control // Telemetry Dashboard
+    - [E] — Open NASA Space Encyclopedia
+    - [H] — Open Fleet Aerospace Hangar
+    - [L] — Open Global Leaderboard
+    - [U] — Open Ship Systems & Quantum Upgrades
+    - [B] — Claim Daily Research Bonus
+
+▶ VALIDATION & QA (v4.1)
+  ───────────────────────
+  ✅ generate_premium_game.py → 279,331 bytes
+  ✅ npm run build → clean (582KB JS, 151KB gzipped, 736ms)
+  ✅ node --check → ZERO syntax errors
+  ✅ 183 getElementById calls, 183 matching HTML IDs — 0 missing
+  ✅ Desktop & mobile responsive screenshot suite verified
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+VERSION: 4.2 — INTERACTIVE HUD SOLAR NODES & ACHIEVEMENTS EXPANSION
+DATE: 2026-11-15
+BUILD: Single-file HTML, 280KB (source) / 583KB minified (Vite)
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+▶ INTERACTIVE HUD SOLAR NODES (SCIENCE TELEMETRY TOASTS)
+  ─────────────────────────────────────────────────────
+  • Every planet node on the in-flight solar progression track (#hudSolarNodes)
+    is now clickable/tappable during flight.
+  • Tapping any celestial node triggers an educational science toast displaying:
+    - Target Planet Name and iconography
+    - Approximate Astronomical Reference Distance
+    - JPL/NASA Orbital Dynamics Insight
+  • Enhanced with subtle directional click sound effect.
+
+▶ INTEGRATED PLANETARY MILESTONE ACHIEVEMENTS
+  ───────────────────────────────────────────
+  • Connected planetary exploration milestone discoveries directly into the
+    career badge progression system (checkAchievements):
+    - Lunar Pioneer badge: unlocks on reaching either Sector 2 or Moon milestone.
+    - Red Planet Outpost badge: unlocks on reaching Sector 3 or Mars milestone.
+    - Lord of the Rings badge: unlocks on reaching Sector 6 or Saturn milestone.
+    - Interstellar Legend badge: unlocks on reaching Sector 10 or Heliopause milestone.
+
+▶ VALIDATION & INTEGRITY (v4.2)
+  ─────────────────────────────
+  ✅ generate_premium_game.py → 280,069 bytes index.html generated
+  ✅ npm run build → clean production build (583KB JS, 151KB gzipped, 765ms)
+  ✅ node --check → ZERO syntax errors
+  ✅ 184 getElementById calls, 184 matching HTML IDs — 0 missing
+  ✅ Dev server active at http://localhost:5173/
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━

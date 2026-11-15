@@ -1,0 +1,2504 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>COSMIC RUN – Beyond the Universe | Premium 3D Space Runner</title>
+    <meta name="description" content="Next-Generation 3D Space Runner & Planetary Exploration Simulator powered by Three.js WebGL and Web Audio Synthesis.">
+    <meta name="theme-color" content="#00f0ff">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="COSMIC RUN">
+    <meta property="og:title" content="COSMIC RUN – Beyond the Universe">
+    <meta property="og:description" content="Premium 3D Space Runner with 10 NASA-inspired planetary sectors, 5 ships, procedural synth music, and deep progression.">
+    <meta property="og:type" content="website">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="COSMIC RUN – Beyond the Universe">
+    <meta name="twitter:description" content="Hackathon Premium 3D Space Runner • Three.js WebGL • 10 Sectors • NASA Science Integration">
+
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            -webkit-touch-callout: none;
+        }
+
+        :root {
+            --cyan-glow: #00f0ff;
+            --cyan-dim: #008fa3;
+            --purple-glow: #b042ff;
+            --purple-dim: #7928ca;
+            --gold-glow: #ffd000;
+            --gold-dim: #b89600;
+            --green-glow: #00ff88;
+            --red-alert: #ff3344;
+            --orange-glow: #ff7700;
+            --panel-bg: rgba(4, 14, 28, 0.88);
+            --panel-border: rgba(0, 240, 255, 0.38);
+            --font-ui: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif;
+            --font-mono: "SF Mono", "Consolas", "Courier New", monospace;
+        }
+
+        body {
+            overflow: hidden;
+            background: #01040a;
+            color: #dffaff;
+            font-family: var(--font-ui);
+            width: 100vw;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        canvas#webgl {
+            display: block;
+            position: fixed;
+            inset: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 1;
+        }
+
+        /* -------------------------------------------------------------
+           PREMIUM HUD & IN-GAME TELEMETRY
+           ------------------------------------------------------------- */
+        #gameHud {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 20;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 16px 24px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        #gameHud.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .hud-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 16px;
+            pointer-events: auto;
+        }
+
+        .hud-left-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .hud-level-pill {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 20px rgba(0, 240, 255, 0.2);
+        }
+
+        .hud-level-icon {
+            font-size: 18px;
+            animation: pulse-soft 2s infinite ease-in-out;
+        }
+
+        .hud-level-info {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hud-level-title {
+            font-size: 11px;
+            font-family: var(--font-mono);
+            font-weight: 900;
+            color: var(--cyan-glow);
+            letter-spacing: 2px;
+        }
+
+        .hud-distance-val {
+            font-size: 14px;
+            font-weight: 800;
+            font-family: var(--font-mono);
+            color: #ffffff;
+        }
+
+        /* Sector Warp Progress Bar in HUD */
+        .hud-sector-progress-box {
+            display: flex;
+            flex-direction: column;
+            gap: 3px;
+            width: 170px;
+            margin-top: 4px;
+        }
+
+        .hud-sector-progress-head {
+            display: flex;
+            justify-content: space-between;
+            font-size: 9px;
+            font-family: var(--font-mono);
+            color: #72eaff;
+            font-weight: 700;
+        }
+
+        .hud-sector-track {
+            height: 4px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .hud-sector-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00f0ff, #b042ff);
+            box-shadow: 0 0 8px #00f0ff;
+            transition: width 0.2s ease;
+        }
+
+        /* Center Score & Combo Cluster */
+        .hud-center-score {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .score-hero {
+            font-size: clamp(34px, 5.5vw, 54px);
+            font-weight: 900;
+            font-family: var(--font-mono);
+            background: linear-gradient(135deg, #ffffff, #00f0ff 60%, #b042ff);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            filter: drop-shadow(0 0 12px rgba(0,240,255,0.7));
+            line-height: 1;
+        }
+
+        .score-badges-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            margin-top: 6px;
+        }
+
+        .score-multiplier-badge {
+            background: linear-gradient(135deg, #ffd000, #ff7700);
+            color: #01121d;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 3px 10px;
+            border-radius: 12px;
+            letter-spacing: 1px;
+            box-shadow: 0 0 14px rgba(255, 208, 0, 0.6);
+            display: none;
+            animation: badge-pulse 0.8s infinite alternate;
+        }
+
+        .score-multiplier-badge.active {
+            display: inline-block;
+        }
+
+        .combo-streak-badge {
+            background: linear-gradient(135deg, #ff3344, #b042ff);
+            color: #ffffff;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 3px 10px;
+            border-radius: 12px;
+            letter-spacing: 1.5px;
+            box-shadow: 0 0 14px rgba(255, 51, 68, 0.6);
+            display: none;
+        }
+
+        .combo-streak-badge.active {
+            display: inline-block;
+        }
+
+        /* Speedometer Digital Gauge */
+        .hud-speed-gauge-wrap {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 4px;
+        }
+
+        .hud-speed-gauge {
+            font-size: 11px;
+            font-family: var(--font-mono);
+            font-weight: 900;
+            color: var(--green-glow);
+            text-shadow: 0 0 8px rgba(0, 255, 136, 0.5);
+            letter-spacing: 1px;
+        }
+
+        /* Right Group (Coins, Shield Pips, Actions) */
+        .hud-right-group {
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+            pointer-events: auto;
+        }
+
+        .hud-coin-pill {
+            background: var(--panel-bg);
+            border: 1px solid rgba(255, 208, 0, 0.4);
+            border-radius: 20px;
+            padding: 5px 14px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 15px;
+            font-weight: 900;
+            font-family: var(--font-mono);
+            color: var(--gold-glow);
+            backdrop-filter: blur(8px);
+            box-shadow: 0 0 14px rgba(255, 208, 0, 0.25);
+        }
+
+        .hud-shield-container {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            padding: 5px 12px;
+            border-radius: 14px;
+            backdrop-filter: blur(8px);
+        }
+
+        .hud-shield-label {
+            font-size: 9px;
+            font-family: var(--font-mono);
+            font-weight: 800;
+            color: #8be5ff;
+            letter-spacing: 1px;
+            margin-right: 4px;
+        }
+
+        .shield-pip {
+            width: 11px;
+            height: 11px;
+            border-radius: 50%;
+            background: var(--cyan-glow);
+            box-shadow: 0 0 10px var(--cyan-glow);
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .shield-pip.depleted {
+            background: #11202e;
+            box-shadow: none;
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            transform: scale(0.85);
+        }
+
+        .hud-action-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .hud-btn-icon {
+            width: 38px;
+            height: 38px;
+            border-radius: 8px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            color: var(--cyan-glow);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 15px;
+            transition: all 0.2s;
+            backdrop-filter: blur(8px);
+        }
+
+        .hud-btn-icon:hover {
+            border-color: #fff;
+            color: #fff;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.4);
+            transform: translateY(-2px);
+        }
+
+        .hud-btn-icon:active {
+            transform: scale(0.92);
+        }
+
+        /* Active Powerups Stack */
+        .hud-powerup-stack {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            pointer-events: none;
+            z-index: 22;
+        }
+
+        /* Pilot XP Mini-Bar (bottom-left during flight) */
+        #hudXpBar {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            display: none;
+            flex-direction: column;
+            gap: 3px;
+            pointer-events: none;
+            z-index: 22;
+        }
+        #hudXpBar.active { display: flex; }
+        .hud-xp-label {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            font-weight: 700;
+            color: rgba(176,66,255,0.9);
+            letter-spacing: 1px;
+        }
+        .hud-xp-track {
+            width: 160px;
+            height: 4px;
+            background: rgba(176,66,255,0.15);
+            border-radius: 2px;
+            overflow: hidden;
+            border: 1px solid rgba(176,66,255,0.3);
+        }
+        .hud-xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #b042ff, #00f0ff);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+
+        .powerup-pill {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 20px;
+            padding: 6px 14px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 800;
+            backdrop-filter: blur(10px);
+            animation: slideInRight 0.3s ease;
+        }
+
+        .powerup-pill.boost {
+            border-color: var(--gold-glow);
+            color: var(--gold-glow);
+            box-shadow: 0 0 15px rgba(255, 208, 0, 0.3);
+        }
+
+        .powerup-pill.shield {
+            border-color: var(--cyan-glow);
+            color: var(--cyan-glow);
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+        }
+
+        .powerup-pill.magnet {
+            border-color: var(--purple-glow);
+            color: var(--purple-glow);
+            box-shadow: 0 0 15px rgba(176, 66, 255, 0.3);
+        }
+
+        .powerup-pill.double {
+            border-color: var(--green-glow);
+            color: var(--green-glow);
+            box-shadow: 0 0 15px rgba(0, 255, 136, 0.3);
+        }
+
+        .powerup-timer-bar {
+            width: 50px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .powerup-timer-fill {
+            height: 100%;
+            background: currentColor;
+            width: 100%;
+            transition: width 0.1s linear;
+        }
+
+        /* Floating Near-Miss / Stunt Notification */
+        #nearMissToast {
+            position: fixed;
+            left: 50%;
+            top: 175px;
+            transform: translateX(-50%) scale(0.8);
+            background: linear-gradient(135deg, rgba(255, 51, 68, 0.92), rgba(176, 66, 255, 0.88));
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            color: #ffffff;
+            padding: 8px 18px;
+            border-radius: 20px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            box-shadow: 0 0 25px rgba(255, 51, 68, 0.6);
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 25;
+        }
+
+        #nearMissToast.active {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+        }
+
+        /* Warp Incoming HUD Alert */
+        #hudWarpAlert {
+            position: fixed;
+            left: 50%;
+            top: 140px;
+            transform: translateX(-50%) scale(0.85);
+            background: linear-gradient(135deg, rgba(130, 0, 255, 0.92), rgba(255, 60, 200, 0.88));
+            border: 2px solid rgba(200, 100, 255, 0.7);
+            color: #fff;
+            padding: 8px 22px;
+            border-radius: 24px;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            box-shadow: 0 0 32px rgba(170, 0, 255, 0.7), 0 0 8px rgba(255, 60, 200, 0.4);
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            z-index: 26;
+            animation: none;
+        }
+
+        #hudWarpAlert.active {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+            animation: warpAlertPulse 0.6s ease-in-out infinite alternate;
+        }
+
+        @keyframes warpAlertPulse {
+            from { box-shadow: 0 0 24px rgba(170, 0, 255, 0.6); }
+            to   { box-shadow: 0 0 48px rgba(255, 60, 200, 0.95), 0 0 16px rgba(200, 100, 255, 0.5); }
+        }
+
+        /* Flight Controls Quick-Hint (Bottom-Center, auto-fades) */
+        #hudControlsHint {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(2, 12, 26, 0.88);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            color: #8be5ff;
+            padding: 7px 18px;
+            border-radius: 20px;
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            pointer-events: none;
+            z-index: 22;
+            opacity: 0;
+            box-shadow: 0 0 16px rgba(0, 240, 255, 0.25);
+            transition: opacity 0.6s ease;
+        }
+
+        #hudControlsHint.active {
+            opacity: 0.95;
+        }
+
+        @media (max-width: 768px) {
+            #hudControlsHint {
+                display: none;
+            }
+        }
+
+        /* NASA Solar System Mission Trajectory HUD Strip */
+        .hud-solar-system-strip {
+            width: min(920px, 100%);
+            margin: 4px auto 0;
+            background: linear-gradient(135deg, rgba(2, 10, 26, 0.94), rgba(14, 6, 30, 0.92));
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            border-radius: 12px;
+            padding: 8px 16px;
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 20px rgba(0, 240, 255, 0.15);
+            backdrop-filter: blur(14px);
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            pointer-events: auto;
+        }
+
+        .hud-solar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: #8be5ff;
+            flex-wrap: wrap;
+            gap: 6px;
+        }
+
+        .hud-solar-dest-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hud-solar-dest-badge .dest-tag {
+            color: #64b5f6;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .hud-solar-dest-badge .dest-name {
+            color: #ffffff;
+            font-weight: 900;
+            letter-spacing: 1px;
+        }
+
+        .hud-solar-next-badge {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .hud-solar-next-badge .next-tag {
+            color: #ffd060;
+            font-weight: 800;
+        }
+
+        .hud-solar-next-badge .next-name {
+            color: var(--gold-glow);
+            font-weight: 900;
+        }
+
+        .hud-solar-next-badge .next-remain {
+            color: var(--cyan-glow);
+            font-size: 9px;
+            background: rgba(0, 240, 255, 0.12);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            padding: 2px 7px;
+            border-radius: 4px;
+        }
+
+        .hud-solar-percent {
+            font-weight: 900;
+            color: #00ff88;
+            letter-spacing: 1px;
+        }
+
+        .hud-solar-track-wrap {
+            position: relative;
+            height: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .hud-solar-track-bg {
+            position: absolute;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
+        }
+
+        .hud-solar-track-fill {
+            position: absolute;
+            left: 0;
+            height: 4px;
+            background: linear-gradient(90deg, #00f0ff, #ffd000, #ff5533, #b042ff);
+            border-radius: 2px;
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.85);
+            transition: width 0.2s linear;
+        }
+
+        .hud-solar-nodes {
+            position: absolute;
+            left: 0;
+            right: 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: none;
+        }
+
+        .solar-node {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            font-size: 11px;
+            cursor: default;
+            transition: transform 0.2s ease;
+        }
+
+        .solar-node.reached {
+            filter: drop-shadow(0 0 6px rgba(0, 240, 255, 0.95));
+        }
+
+        .solar-node.unreached {
+            opacity: 0.35;
+            filter: grayscale(0.8);
+        }
+
+        .hud-solar-ship-indicator {
+            position: absolute;
+            top: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 13px;
+            filter: drop-shadow(0 0 8px rgba(0, 255, 255, 0.95));
+            transition: left 0.2s linear;
+            z-index: 2;
+        }
+
+        .hud-solar-disclaimer {
+            font-size: 8px;
+            font-family: var(--font-mono);
+            color: rgba(139, 229, 255, 0.6);
+            text-align: right;
+            letter-spacing: 0.5px;
+        }
+
+        /* NASA Planetary Exploration Milestone Alert Overlay */
+        #nasaMilestoneBanner {
+            position: fixed;
+            left: 50%;
+            top: 90px;
+            transform: translateX(-50%) scale(0.85);
+            width: min(520px, 92vw);
+            background: linear-gradient(135deg, rgba(2, 14, 34, 0.98), rgba(20, 8, 42, 0.96));
+            border: 2px solid var(--gold-glow);
+            border-radius: 16px;
+            padding: 16px 22px;
+            box-shadow: 0 12px 45px rgba(0, 0, 0, 0.9), 0 0 40px rgba(255, 215, 0, 0.55);
+            backdrop-filter: blur(16px);
+            z-index: 100;
+            pointer-events: none;
+            opacity: 0;
+            transition: all 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            text-align: center;
+        }
+
+        #nasaMilestoneBanner.active {
+            opacity: 1;
+            transform: translateX(-50%) scale(1);
+            animation: milestonePulse 0.8s ease-in-out infinite alternate;
+        }
+
+        @keyframes milestonePulse {
+            from { box-shadow: 0 0 25px rgba(255, 215, 0, 0.35); }
+            to   { box-shadow: 0 0 50px rgba(255, 215, 0, 0.75), 0 0 20px rgba(0, 240, 255, 0.5); }
+        }
+
+        .milestone-badge-tag {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 900;
+            letter-spacing: 2.5px;
+            color: var(--gold-glow);
+            margin-bottom: 8px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.6);
+        }
+
+        .milestone-planet-hero {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            margin-bottom: 8px;
+        }
+
+        .milestone-planet-icon {
+            font-size: 38px;
+            filter: drop-shadow(0 0 12px rgba(255, 255, 255, 0.85));
+            animation: spinGlow 6s linear infinite;
+        }
+
+        .milestone-info-wrap h2 {
+            font-family: var(--font-display);
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 1.5px;
+            color: #ffffff;
+            margin: 0;
+            text-shadow: 0 0 12px rgba(0, 240, 255, 0.6);
+        }
+
+        .milestone-dist-ref {
+            font-family: var(--font-mono);
+            font-size: 11px;
+            font-weight: 800;
+            color: var(--cyan-glow);
+            margin-top: 3px;
+            letter-spacing: 1px;
+        }
+
+        .milestone-note {
+            font-size: 11px;
+            color: #d0f0ff;
+            line-height: 1.45;
+            margin: 6px 0 10px;
+            font-family: var(--font-sans);
+        }
+
+        .milestone-rewards-row {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .milestone-pill {
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid var(--cyan-glow);
+            color: var(--cyan-glow);
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 800;
+            padding: 3px 10px;
+            border-radius: 12px;
+        }
+
+        .milestone-pill.xp {
+            background: rgba(176, 66, 255, 0.15);
+            border-color: var(--purple-glow);
+            color: #e099ff;
+        }
+
+        .milestone-sim-note {
+            font-family: var(--font-mono);
+            font-size: 9px;
+            color: #8be5ff;
+            opacity: 0.8;
+        }
+
+        /* In-Run Mission Tracker */
+        #missionTracker {
+            position: fixed;
+            z-index: 21;
+            left: 50%;
+            top: 155px;
+            transform: translateX(-50%);
+            width: min(390px, calc(100vw - 32px));
+            padding: 10px 16px;
+            border: 1px solid rgba(0, 240, 255, 0.35);
+            border-radius: 12px;
+            background: linear-gradient(135deg, rgba(3, 17, 36, 0.92), rgba(19, 10, 43, 0.9));
+            box-shadow: 0 10px 35px rgba(0, 0, 0, 0.4), 0 0 25px rgba(0, 220, 255, 0.12);
+            backdrop-filter: blur(14px);
+            pointer-events: none;
+            opacity: 0;
+            transition: opacity 0.25s ease, transform 0.25s ease;
+        }
+
+        #missionTracker.active {
+            opacity: 1;
+        }
+
+        .mission-head {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mission-kicker {
+            color: #72eaff;
+            font: 900 9px var(--font-mono);
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .mission-reward {
+            color: #ffd66b;
+            font: 900 10px var(--font-mono);
+        }
+
+        .mission-title {
+            margin-top: 4px;
+            color: #fff;
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 0.5px;
+        }
+
+        .mission-sub {
+            margin-top: 2px;
+            color: #9bb8d1;
+            font: 10px var(--font-mono);
+        }
+
+        .mission-track {
+            height: 5px;
+            background: rgba(255, 255, 255, 0.12);
+            border-radius: 8px;
+            overflow: hidden;
+            margin-top: 8px;
+        }
+
+        .mission-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00eaff, #b042ff);
+            box-shadow: 0 0 12px #00eaff;
+            transition: width 0.25s ease;
+        }
+
+        /* Floating Contextual NASA Science Toast */
+        #scienceToast {
+            position: fixed;
+            bottom: 24px;
+            left: 24px;
+            max-width: 440px;
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-left: 4px solid var(--cyan-glow);
+            border-radius: 8px;
+            padding: 12px 16px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6);
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.35s ease;
+            pointer-events: none;
+            z-index: 25;
+        }
+
+        #scienceToast.active {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .science-toast-icon {
+            font-size: 26px;
+            line-height: 1;
+        }
+
+        .science-toast-content {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .science-toast-tag {
+            font-size: 9px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            color: var(--cyan-glow);
+            font-family: var(--font-mono);
+            margin-bottom: 2px;
+        }
+
+        .science-toast-title {
+            font-size: 13px;
+            font-weight: 800;
+            color: #ffffff;
+            margin-bottom: 3px;
+        }
+
+        .science-toast-body {
+            font-size: 11px;
+            line-height: 1.4;
+            color: #b0d4ff;
+        }
+
+        .science-toast-source {
+            font-size: 9px;
+            color: #6a95c0;
+            font-family: var(--font-mono);
+            margin-top: 4px;
+        }
+
+        /* Hackathon Automated Demo Narration Banner */
+        #demoNarrationBanner {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, rgba(176, 66, 255, 0.92), rgba(0, 240, 255, 0.88));
+            border: 1px solid rgba(255, 255, 255, 0.4);
+            border-radius: 30px;
+            padding: 8px 24px;
+            color: #ffffff;
+            font-family: var(--font-mono);
+            font-size: 12px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            box-shadow: 0 0 30px rgba(176, 66, 255, 0.6);
+            z-index: 100;
+            display: none;
+            text-align: center;
+            max-width: 90vw;
+        }
+
+        #demoNarrationBanner.active {
+            display: block;
+            animation: bounceIn 0.4s ease;
+        }
+
+        /* -------------------------------------------------------------
+           MOBILE ON-SCREEN TOUCH CONTROLS
+           ------------------------------------------------------------- */
+        #mobileControls {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 24;
+            display: none;
+        }
+
+        @media (max-width: 900px), (pointer: coarse) {
+            #mobileControls {
+                display: block;
+            }
+        }
+
+        .mobile-lane-btns {
+            position: absolute;
+            bottom: 24px;
+            left: 18px;
+            display: flex;
+            gap: 12px;
+            pointer-events: auto;
+        }
+
+        .mobile-jump-dive-btns {
+            position: absolute;
+            bottom: 24px;
+            right: 18px;
+            display: flex;
+            gap: 12px;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .touch-btn {
+            width: 58px;
+            height: 58px;
+            border-radius: 50%;
+            background: rgba(4, 18, 36, 0.85);
+            border: 2px solid rgba(0, 240, 255, 0.5);
+            color: var(--cyan-glow);
+            font-size: 22px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(0, 240, 255, 0.25);
+            transition: transform 0.1s ease, border-color 0.1s ease, background 0.1s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .touch-btn:active {
+            transform: scale(0.9);
+            background: rgba(0, 240, 255, 0.3);
+            border-color: #fff;
+            color: #fff;
+        }
+
+        .touch-btn.boost-btn {
+            border-color: var(--gold-glow);
+            color: var(--gold-glow);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.6), 0 0 15px rgba(255, 208, 0, 0.35);
+        }
+
+        .touch-btn.boost-btn:active {
+            background: rgba(255, 208, 0, 0.3);
+            border-color: #fff;
+            color: #fff;
+        }
+
+        /* -------------------------------------------------------------
+           MAIN MENU & 3D HANGAR EXPERIENCE
+           ------------------------------------------------------------- */
+        #mainMenu {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 24px 32px;
+            pointer-events: none;
+            transition: opacity 0.4s ease, visibility 0.4s ease;
+        }
+
+        #mainMenu.hidden {
+            opacity: 0;
+            visibility: hidden;
+            pointer-events: none;
+            display: none !important;
+        }
+
+        .menu-top-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            pointer-events: auto;
+        }
+
+        .menu-logo-group {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .hackathon-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: rgba(0, 240, 255, 0.12);
+            border: 1px solid rgba(0, 240, 255, 0.45);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 10px;
+            font-weight: 800;
+            letter-spacing: 2px;
+            color: var(--cyan-glow);
+            width: fit-content;
+            margin-bottom: 6px;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.25);
+        }
+
+        .hackathon-badge span.accent {
+            background: linear-gradient(135deg, #b042ff, #00f0ff);
+            color: #ffffff;
+            padding: 1px 7px;
+            border-radius: 3px;
+            font-weight: 900;
+        }
+
+        .menu-title-main {
+            font-size: clamp(32px, 5.5vw, 64px);
+            font-weight: 900;
+            letter-spacing: 6px;
+            background: linear-gradient(135deg, #ffffff 0%, #00f0ff 40%, #b042ff 70%, #ffffff 100%);
+            background-size: 200% auto;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: neonFlicker 7s infinite ease-in-out, titleShimmer 4s linear infinite;
+            line-height: 1;
+            filter: drop-shadow(0 0 18px rgba(0,240,255,0.7)) drop-shadow(0 0 40px rgba(176,66,255,0.4));
+        }
+
+        .menu-title-sub {
+            font-size: 12px;
+            font-family: var(--font-mono);
+            letter-spacing: 3px;
+            color: #8be5ff;
+            margin-top: 6px;
+        }
+
+        .menu-stats-pill-group {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .stat-pill {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            border-radius: 24px;
+            padding: 6px 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 13px;
+            font-weight: 800;
+            backdrop-filter: blur(12px);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.5);
+        }
+
+        .stat-pill.coins {
+            color: var(--gold-glow);
+            border-color: rgba(255, 208, 0, 0.4);
+        }
+
+        .stat-pill.best {
+            color: var(--cyan-glow);
+        }
+
+        .stat-pill.level {
+            color: var(--purple-glow);
+            border-color: rgba(176, 66, 255, 0.4);
+        }
+
+        /* 3D Hangar Ship Carousel Overlay */
+        .hangar-ship-selector {
+            position: absolute;
+            left: 50%;
+            bottom: 215px;
+            transform: translateX(-50%);
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            pointer-events: auto;
+            z-index: 52;
+            background: rgba(2, 10, 22, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 16px;
+            padding: 10px 18px;
+            backdrop-filter: blur(14px);
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.5);
+        }
+
+        .btn-ship-nav {
+            width: 38px;
+            height: 38px;
+            border-radius: 50%;
+            background: rgba(0, 240, 255, 0.12);
+            border: 1px solid var(--cyan-glow);
+            color: var(--cyan-glow);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+
+        .btn-ship-nav:hover {
+            background: var(--cyan-glow);
+            color: #01040a;
+            box-shadow: 0 0 15px var(--cyan-glow);
+        }
+
+        .hangar-ship-title {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-width: 200px;
+        }
+
+        .hangar-ship-title h3 {
+            font-size: 15px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 1.5px;
+        }
+
+        .hangar-ship-title p {
+            font-size: 10px;
+            color: #8be5ff;
+            font-family: var(--font-mono);
+            margin-top: 2px;
+        }
+
+        .hangar-ship-action-btn {
+            margin-top: 6px;
+            padding: 4px 14px;
+            border-radius: 12px;
+            font-size: 10px;
+            font-family: var(--font-mono);
+            font-weight: 900;
+            cursor: pointer;
+            border: 1px solid var(--cyan-glow);
+            background: rgba(0, 240, 255, 0.2);
+            color: #ffffff;
+            transition: all 0.2s;
+        }
+
+        .hangar-ship-action-btn:hover {
+            background: var(--cyan-glow);
+            color: #01040a;
+        }
+
+        .hangar-ship-action-btn.locked {
+            border-color: var(--gold-glow);
+            background: rgba(255, 208, 0, 0.2);
+            color: var(--gold-glow);
+        }
+
+        /* Bottom Controls & Nav */
+        .menu-bottom-controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 12px;
+            pointer-events: auto;
+            margin-bottom: 8px;
+        }
+
+        .btn-launch-cluster {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+
+        .btn-launch {
+            background: linear-gradient(135deg, #00f0ff, #b042ff);
+            color: #ffffff;
+            border: none;
+            padding: 15px 36px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: 900;
+            letter-spacing: 3px;
+            cursor: pointer;
+            box-shadow: 0 0 35px rgba(0, 240, 255, 0.6), 0 0 70px rgba(176, 66, 255, 0.35);
+            transition: all 0.25s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            animation: pulse-soft 2.4s ease-in-out infinite;
+        }
+
+        .btn-launch:hover {
+            transform: scale(1.04);
+            box-shadow: 0 0 45px rgba(0, 240, 255, 0.8), 0 0 90px rgba(176, 66, 255, 0.5);
+        }
+
+        .btn-launch:active {
+            transform: scale(0.96);
+        }
+
+        .btn-demo-tour {
+            background: rgba(176, 66, 255, 0.2);
+            border: 1px solid var(--purple-glow);
+            color: #e4c2ff;
+            padding: 15px 22px;
+            border-radius: 30px;
+            font-size: 13px;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.25s;
+        }
+
+        .btn-demo-tour:hover {
+            background: var(--purple-glow);
+            color: #ffffff;
+            box-shadow: 0 0 25px rgba(176, 66, 255, 0.6);
+            transform: scale(1.03);
+        }
+
+        .menu-feature-strip {
+            display: flex;
+            gap: 8px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .feature-chip {
+            color: #a9c9e5;
+            border: 1px solid rgba(113, 192, 255, 0.22);
+            background: rgba(4, 18, 38, 0.75);
+            border-radius: 6px;
+            padding: 5px 10px;
+            font: 700 9px var(--font-mono);
+            letter-spacing: 1px;
+        }
+
+        .feature-chip b {
+            color: #fff;
+        }
+
+        .menu-nav-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .btn-menu-tab {
+            background: var(--panel-bg);
+            border: 1px solid var(--panel-border);
+            color: #c9e8ff;
+            border-radius: 20px;
+            padding: 8px 14px;
+            font-size: 11px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            cursor: pointer;
+            backdrop-filter: blur(12px);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.2s;
+        }
+
+        .btn-menu-tab:hover {
+            border-color: var(--cyan-glow);
+            color: #ffffff;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        .btn-menu-tab:active {
+            transform: scale(0.95);
+        }
+
+        /* -------------------------------------------------------------
+           MODAL SYSTEM (WORLDS, HANGAR, UPGRADES, LEADERBOARD, PAUSE, ETC.)
+           ------------------------------------------------------------- */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(1, 4, 10, 0.85);
+            backdrop-filter: blur(16px);
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .modal-dialog {
+            background: linear-gradient(135deg, rgba(4, 18, 38, 0.95), rgba(16, 8, 32, 0.95));
+            border: 1px solid var(--panel-border);
+            border-radius: 16px;
+            width: min(820px, 95vw);
+            max-height: 88vh;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.8), 0 0 40px rgba(0, 240, 255, 0.15);
+            overflow: hidden;
+            animation: modalScaleUp 0.3s ease;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 24px;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.2);
+        }
+
+        .modal-header h2 {
+            font-size: 16px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 2px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .modal-close-btn {
+            background: none;
+            border: none;
+            color: #8be5ff;
+            font-size: 20px;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            transition: color 0.2s;
+        }
+
+        .modal-close-btn:hover {
+            color: #ffffff;
+        }
+
+        .modal-body {
+            padding: 20px 24px;
+            overflow-y: auto;
+            flex: 1;
+        }
+
+        /* Button in modals */
+        .btn-card-action {
+            background: linear-gradient(135deg, var(--cyan-glow), var(--purple-glow));
+            border: none;
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-size: 11px;
+            font-weight: 900;
+            letter-spacing: 1px;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-card-action:hover {
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.5);
+            transform: scale(1.03);
+        }
+
+        /* 10 Progressive Worlds Grid */
+        .worlds-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 14px;
+        }
+
+        .world-card {
+            background: rgba(2, 12, 26, 0.85);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            border-radius: 12px;
+            padding: 16px;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            gap: 12px;
+            transition: all 0.25s;
+        }
+
+        .world-card.unlocked {
+            border-color: rgba(0, 240, 255, 0.45);
+        }
+
+        .world-card.active-selected {
+            border-color: var(--cyan-glow);
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.35);
+            background: rgba(4, 24, 48, 0.9);
+        }
+
+        .world-card.locked {
+            opacity: 0.55;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        /* Tactical Pause Menu Overlay */
+        #pauseModal .pause-dialog {
+            background: linear-gradient(135deg, rgba(3, 14, 30, 0.96), rgba(15, 6, 30, 0.96));
+            border: 1px solid var(--cyan-glow);
+            border-radius: 18px;
+            width: min(520px, 92vw);
+            padding: 24px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.9), 0 0 40px rgba(0, 240, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            animation: modalScaleUp 0.3s ease;
+        }
+
+        .pause-header {
+            text-align: center;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.25);
+            padding-bottom: 12px;
+        }
+
+        .pause-header h2 {
+            font-size: 20px;
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 3px;
+        }
+
+        .pause-header p {
+            font-size: 11px;
+            color: #8be5ff;
+            font-family: var(--font-mono);
+            margin-top: 4px;
+        }
+
+        .pause-stats-strip {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 8px;
+            background: rgba(2, 10, 20, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.2);
+            border-radius: 10px;
+            padding: 10px;
+            text-align: center;
+        }
+
+        .pause-stat-box .lbl {
+            font-size: 9px;
+            font-family: var(--font-mono);
+            color: #8be5ff;
+            font-weight: 700;
+        }
+
+        .pause-stat-box .val {
+            font-size: 15px;
+            font-family: var(--font-mono);
+            font-weight: 900;
+            color: #fff;
+            margin-top: 2px;
+        }
+
+        .pause-slider-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 700;
+            color: #c9e8ff;
+            gap: 12px;
+        }
+
+        .pause-slider-row input[type="range"] {
+            flex: 1;
+            accent-color: var(--cyan-glow);
+            cursor: pointer;
+        }
+
+        .pause-btn-stack {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-top: 8px;
+        }
+
+        .btn-pause-action {
+            padding: 12px;
+            border-radius: 10px;
+            font-size: 13px;
+            font-weight: 900;
+            letter-spacing: 2px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .btn-pause-resume {
+            background: linear-gradient(135deg, #00f0ff, #b042ff);
+            color: #fff;
+            box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+        }
+
+        .btn-pause-restart {
+            background: rgba(255, 208, 0, 0.15);
+            border: 1px solid var(--gold-glow);
+            color: var(--gold-glow);
+        }
+
+        .btn-pause-hangar {
+            background: rgba(4, 24, 48, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            color: #fff;
+        }
+
+        /* Leaderboard Modal */
+        .leaderboard-callsign-box {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(2, 10, 22, 0.85);
+            border: 1px solid var(--panel-border);
+            border-radius: 10px;
+            padding: 12px 16px;
+            margin-bottom: 14px;
+        }
+
+        .leaderboard-callsign-box input {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 6px;
+            color: #fff;
+            font-family: var(--font-mono);
+            font-size: 14px;
+            font-weight: 800;
+            padding: 6px 12px;
+            flex: 1;
+            outline: none;
+        }
+
+        .leaderboard-callsign-box input:focus {
+            border-color: var(--cyan-glow);
+            box-shadow: 0 0 10px rgba(0, 240, 255, 0.3);
+        }
+
+        .leaderboard-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-family: var(--font-mono);
+            font-size: 11px;
+        }
+
+        .leaderboard-table th {
+            text-align: left;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(0, 240, 255, 0.3);
+            color: #8be5ff;
+            font-weight: 800;
+            letter-spacing: 1px;
+        }
+
+        .leaderboard-table td {
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+            color: #fff;
+        }
+
+        .leaderboard-table tr.player-row {
+            background: rgba(0, 240, 255, 0.15);
+            border: 1px solid var(--cyan-glow);
+            font-weight: 900;
+        }
+
+        .leaderboard-table tr.player-row td {
+            color: var(--cyan-glow);
+        }
+
+        /* Game Over Cinematic Screen */
+        .gameover-dialog {
+            background: linear-gradient(135deg, rgba(3, 12, 28, 0.98), rgba(20, 4, 30, 0.98));
+            border: 1px solid var(--cyan-glow);
+            border-radius: 18px;
+            width: min(540px, 92vw);
+            padding: 28px 24px;
+            box-shadow: 0 25px 70px rgba(0, 0, 0, 0.9), 0 0 50px rgba(0, 240, 255, 0.35);
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            text-align: center;
+            animation: modalScaleUp 0.35s ease;
+        }
+
+        .gameover-title {
+            font-size: clamp(24px, 5vw, 32px);
+            font-weight: 900;
+            color: #ffffff;
+            letter-spacing: 4px;
+        }
+
+        .gameover-sub {
+            font-size: 11px;
+            font-family: var(--font-mono);
+            color: #ff5566;
+            letter-spacing: 1.5px;
+            font-weight: 800;
+        }
+
+        .new-record-badge {
+            display: inline-block;
+            background: linear-gradient(135deg, #ffd000, #ff7700);
+            color: #01121d;
+            font-size: 11px;
+            font-weight: 900;
+            padding: 4px 14px;
+            border-radius: 14px;
+            letter-spacing: 2px;
+            box-shadow: 0 0 20px rgba(255, 208, 0, 0.6);
+            margin: 0 auto;
+        }
+
+        .gameover-stats-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .gameover-stat-box {
+            background: rgba(2, 12, 26, 0.8);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            border-radius: 10px;
+            padding: 12px;
+        }
+
+        .gameover-stat-box .label {
+            font-size: 9px;
+            font-family: var(--font-mono);
+            color: #8be5ff;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .gameover-stat-box .val {
+            font-size: 18px;
+            font-weight: 900;
+            font-family: var(--font-mono);
+            color: #ffffff;
+            margin-top: 4px;
+        }
+
+        .gameover-agency-badge {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 0 auto;
+            background: rgba(0, 40, 100, 0.5);
+            border: 1px solid rgba(0, 240, 255, 0.4);
+            padding: 4px 12px;
+            border-radius: 20px;
+        }
+
+        .gameover-agency-badge .nasa-insignia {
+            background: #e03a3e;
+            color: #ffffff;
+            font-family: var(--font-display);
+            font-size: 10px;
+            font-weight: 900;
+            padding: 2px 6px;
+            border-radius: 4px;
+            letter-spacing: 1px;
+        }
+
+        .gameover-agency-badge .agency-title {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            color: #8be5ff;
+            font-weight: 800;
+            letter-spacing: 1.5px;
+        }
+
+        .gameover-milestones-section {
+            background: rgba(2, 10, 24, 0.7);
+            border: 1px solid rgba(0, 240, 255, 0.25);
+            border-radius: 10px;
+            padding: 12px;
+            text-align: left;
+        }
+
+        .gameover-milestones-section .section-title {
+            font-family: var(--font-mono);
+            font-size: 10px;
+            font-weight: 900;
+            color: var(--cyan-glow);
+            letter-spacing: 1.5px;
+            margin-bottom: 8px;
+        }
+
+        .gameover-milestone-pills {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+            gap: 8px;
+        }
+
+        .go-milestone-pill {
+            background: rgba(3, 18, 38, 0.85);
+            border: 1px solid rgba(0, 240, 255, 0.3);
+            border-radius: 6px;
+            padding: 6px 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-family: var(--font-mono);
+            font-size: 9px;
+        }
+
+        .go-milestone-pill.achieved {
+            border-color: rgba(0, 255, 136, 0.5);
+            background: rgba(2, 28, 24, 0.85);
+        }
+
+        .go-milestone-pill.locked {
+            opacity: 0.45;
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .gameover-scientific-notice {
+            background: rgba(2, 14, 30, 0.75);
+            border: 1px dashed rgba(0, 240, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            font-size: 9px;
+            font-family: var(--font-mono);
+            color: #8be5ff;
+            text-align: left;
+            line-height: 1.45;
+        }
+
+        .gameover-xp-card {
+            background: rgba(176, 66, 255, 0.12);
+            border: 1px solid rgba(176, 66, 255, 0.35);
+            border-radius: 10px;
+            padding: 12px 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .gameover-xp-bar {
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .gameover-xp-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #b042ff, #00f0ff);
+            box-shadow: 0 0 10px #b042ff;
+            width: 0%;
+            transition: width 0.5s ease;
+        }
+
+        .gameover-btn-stack {
+            display: flex;
+            gap: 10px;
+            margin-top: 4px;
+        }
+
+        .gameover-btn-stack button {
+            flex: 1;
+        }
+
+        /* Animations */
+        @keyframes pulse-soft {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.15); }
+        }
+
+        @keyframes badge-pulse {
+            from { transform: scale(1); box-shadow: 0 0 10px rgba(255, 208, 0, 0.5); }
+            to { transform: scale(1.06); box-shadow: 0 0 20px rgba(255, 208, 0, 0.9); }
+        }
+
+        @keyframes modalScaleUp {
+            from { opacity: 0; transform: scale(0.92); }
+            to { opacity: 1; transform: scale(1); }
+        }
+
+        @keyframes slideInRight {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        @keyframes bounceIn {
+            0% { transform: translateX(-50%) scale(0.7); opacity: 0; }
+            70% { transform: translateX(-50%) scale(1.05); opacity: 1; }
+            100% { transform: translateX(-50%) scale(1); }
+        }
+
+        @keyframes neonFlicker {
+            0%, 93%, 97%, 100% { opacity: 1; text-shadow: 0 0 30px rgba(0,240,255,0.9), 0 0 60px rgba(176,66,255,0.5), 0 0 100px rgba(0,240,255,0.3); }
+            95% { opacity: 0.82; text-shadow: 0 0 10px rgba(0,240,255,0.4); }
+        }
+        @keyframes titleShimmer {
+            0% { background-position: -200% center; }
+            100% { background-position: 200% center; }
+        }
+        @keyframes spinGlow {
+            0% { transform: rotate(0deg); filter: hue-rotate(0deg); }
+            100% { transform: rotate(360deg); filter: hue-rotate(360deg); }
+        }
+        @keyframes hudScanLine {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+        @keyframes warpRipple {
+            0% { transform: translateX(-50%) scaleX(1); opacity: 0.9; }
+            100% { transform: translateX(-50%) scaleX(1.6); opacity: 0; }
+        }
+        @keyframes coinFloat {
+            0%, 100% { transform: translateY(0px) rotate(-2deg); }
+            50% { transform: translateY(-4px) rotate(2deg); }
+        }
+
+        /* Responsive Layout Overrides */
+        @media (max-width: 768px) {
+            #mainMenu { padding: 16px; }
+            .menu-title-main { font-size: clamp(28px, 8vw, 42px); letter-spacing: 3px; }
+            .hangar-ship-selector { bottom: 185px; width: min(340px, 92vw); padding: 8px 12px; }
+            .hangar-ship-title h3 { font-size: 13px; }
+            .hangar-ship-title p { font-size: 8px; }
+            .btn-launch { font-size: 15px; padding: 12px 26px; }
+            .btn-demo-tour { font-size: 11px; padding: 12px 16px; }
+            .btn-menu-tab { font-size: 9px; padding: 6px 10px; }
+            .hud-solar-system-strip { padding: 4px 10px; margin-top: 2px; margin-bottom: 78px; }
+            .hud-solar-next-badge .next-remain { display: none; }
+            .hud-solar-disclaimer { display: none; }
+            #missionTracker { top: 145px !important; }
+            #scienceToast { max-width: calc(100vw - 32px); bottom: 95px; left: 16px; }
+            .hud-top-bar { gap: 8px; }
+            .hud-level-pill { padding: 4px 10px; }
+            .hud-sector-progress-box { width: 120px; }
+            .score-hero { font-size: 32px; }
+            .hud-coin-pill { font-size: 13px; padding: 4px 10px; }
+            .hud-powerup-stack { bottom: 95px; right: 16px; }
+        }
+
+        @media (max-height: 650px) {
+            .hangar-ship-selector { bottom: 125px; }
+            .menu-bottom-controls { margin-bottom: 0; gap: 8px; }
+            .menu-title-main { font-size: 36px; }
+            .hud-solar-system-strip { display: none; }
+            #missionTracker { top: 75px; padding: 6px 12px; }
+        }
+    </style>
+    <script type="importmap">
+    {
+      "imports": {
+        "three": "https://cdn.jsdelivr.net/npm/three@0.170.0/build/three.module.js"
+      }
+    }
+    </script>
+  <script type="module" crossorigin src="/assets/index-26LE3T6C.js"></script>
+</head>
+
+<body>
+    <!-- 3D WEBGL CANVAS -->
+    <canvas id="webgl"></canvas>
+
+    <!-- 1. IN-GAME HUD -->
+    <div id="gameHud">
+        <div class="hud-top-bar">
+            <!-- Left cluster: Level & Sector Progress -->
+            <div class="hud-left-group">
+                <div class="hud-level-pill">
+                    <span class="hud-level-icon" id="hudLevelIcon">🌍</span>
+                    <div class="hud-level-info">
+                        <div class="hud-level-title" id="hudLevelTitle">LEVEL 1 // EARTH ORBIT</div>
+                        <div class="hud-distance-val"><span id="hudDistanceVal">0</span> M TRACK · <span id="hudMissionKmVal" style="color:var(--cyan-glow); font-weight:900;">0 KM</span>*</div>
+                    </div>
+                </div>
+
+                <div class="hud-sector-progress-box">
+                    <div class="hud-sector-progress-head">
+                        <span>WARP GATE DISTANCE</span>
+                        <span id="hudSectorPercent">0%</span>
+                    </div>
+                    <div class="hud-sector-track">
+                        <div class="hud-sector-fill" id="hudSectorFill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Center cluster: Hero Score & Multiplier -->
+            <div class="hud-center-score">
+                <div class="score-hero" id="hudScoreVal">0</div>
+                <div class="score-badges-row">
+                    <div class="score-multiplier-badge" id="hudMultiplierBadge">2X SCORE</div>
+                    <div class="combo-streak-badge" id="hudComboBadge">3X COMBO 🔥</div>
+                </div>
+                <div class="hud-speed-gauge-wrap">
+                    <span style="font-size:10px;">⚡</span>
+                    <span class="hud-speed-gauge" id="hudSpeedGauge">40.0 KM/S</span>
+                </div>
+            </div>
+
+            <!-- Right cluster: Coins, Shield, Pause -->
+            <div class="hud-right-group">
+                <div class="hud-coin-pill">
+                    <span>🪙</span>
+                    <span id="hudCoinVal">0</span>
+                </div>
+
+                <div class="hud-shield-container">
+                    <span class="hud-shield-label">SHIELD</span>
+                    <div id="hudShieldPips" style="display:flex; gap:5px;">
+                        <div class="shield-pip" id="pip1"></div>
+                        <div class="shield-pip" id="pip2"></div>
+                        <div class="shield-pip" id="pip3"></div>
+                        <div class="shield-pip" id="pip4" style="display:none;"></div>
+                    </div>
+                </div>
+
+                <div class="hud-action-row">
+                    <button class="hud-btn-icon" id="inGameAudioBtn" title="Toggle Sound">🔊</button>
+                    <button class="hud-btn-icon" id="inGamePauseBtn" title="Tactical Pause">⏸</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- NASA Solar System Mission Trajectory HUD Strip -->
+        <div class="hud-solar-system-strip" id="hudSolarSystemStrip">
+            <div class="hud-solar-header">
+                <div class="hud-solar-dest-badge">
+                    <span class="dest-tag">TARGET:</span>
+                    <span class="dest-name" id="hudCurrentMilestoneName">🌍 Earth Orbit</span>
+                </div>
+                <div class="hud-solar-next-badge">
+                    <span class="next-tag">NEXT:</span>
+                    <span class="next-name" id="hudNextMilestoneName">🌕 Moon (384,400 km)</span>
+                    <span class="next-remain" id="hudMilestoneRemainVal">384,400 KM REMAINING</span>
+                </div>
+                <div class="hud-solar-percent" id="hudMissionPercentVal">0.0% OF SYSTEM</div>
+            </div>
+            <div class="hud-solar-track-wrap">
+                <div class="hud-solar-track-bg"></div>
+                <div class="hud-solar-track-fill" id="hudSolarTrackFill" style="width:0%;"></div>
+                <div class="hud-solar-nodes" id="hudSolarNodes"></div>
+                <div class="hud-solar-ship-indicator" id="hudSolarShipIndicator">🚀</div>
+            </div>
+            <div class="hud-solar-disclaimer">*Simulated educational reference distances based on NASA/JPL planetary ephemeris.</div>
+        </div>
+
+        <!-- Floating Near-Miss Alert -->
+        <div id="nearMissToast">⚡ NEAR MISS! +100 PTS</div>
+
+        <!-- Warp Gate Incoming Warning -->
+        <div id="hudWarpAlert">🌀 WARP GATE INCOMING!</div>
+
+        <!-- Flight Controls Quick-Hint (Bottom-Center, auto-fades) -->
+        <div id="hudControlsHint">
+            <span>[A/D] STEER</span> · <span>[W] JUMP</span> · <span>[S] DIVE</span> · <span>[SPACE] BOOST</span>
+        </div>
+
+        <!-- NASA Planetary Exploration Milestone Alert Overlay -->
+        <div id="nasaMilestoneBanner">
+            <div class="milestone-badge-tag">✦ NASA EXPLORATION MILESTONE REACHED ✦</div>
+            <div class="milestone-planet-hero">
+                <span class="milestone-planet-icon" id="milestonePlanetIcon">🌕</span>
+                <div class="milestone-info-wrap">
+                    <h2 id="milestonePlanetTitle">THE MOON (LUNA)</h2>
+                    <div class="milestone-dist-ref" id="milestonePlanetDistRef">384,400 KM ASTRONOMICAL REFERENCE DISTANCE*</div>
+                </div>
+            </div>
+            <p class="milestone-note" id="milestonePlanetNote">Translunar trajectory achieved. Entering lunar orbital capture corridor.</p>
+            <div class="milestone-rewards-row">
+                <span class="milestone-pill" id="milestoneRewardScore">+500 SCORE</span>
+                <span class="milestone-pill xp" id="milestoneRewardXp">+350 PILOT XP</span>
+                <span class="milestone-sim-note">*Simulated educational distance</span>
+            </div>
+        </div>
+
+        <!-- Active Powerup Timers Stack -->
+        <div class="hud-powerup-stack" id="hudPowerupStack"></div>
+
+        <!-- Pilot XP Mini-Bar (bottom-left) -->
+        <div id="hudXpBar">
+            <div class="hud-xp-label" id="hudXpLabel">RANK 1 · FLIGHT CADET</div>
+            <div class="hud-xp-track">
+                <div class="hud-xp-fill" id="hudXpFill" style="width:0%"></div>
+            </div>
+        </div>
+
+        <!-- Contextual NASA Science Discovery Toast -->
+        <div id="scienceToast">
+            <div class="science-toast-icon" id="scienceToastIcon">🪐</div>
+            <div class="science-toast-content">
+                <div class="science-toast-tag" id="scienceToastTag">✦ NASA SCIENTIFIC DISCOVERY</div>
+                <div class="science-toast-title" id="scienceToastTitle">EARTH ORBIT // LOW EARTH ATMOSPHERE</div>
+                <div class="science-toast-body" id="scienceToastBody">Orbital velocity is 7.8 km/s (28,000 km/h). The International Space Station completes an orbit every 92 minutes.</div>
+                <div class="science-toast-source" id="scienceToastSource">Source: NASA Planetary Fact Sheet / JPL</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 2. IN-RUN ACTIVE MISSION TRACKER -->
+    <div id="missionTracker" aria-live="polite">
+        <div class="mission-head">
+            <span class="mission-kicker">🎯 ACTIVE MISSION OBJECTIVE</span>
+            <span class="mission-reward" id="missionRewardText">REWARD +150 XP / +75 COINS</span>
+        </div>
+        <div class="mission-title" id="missionTitle">DISTANCE PROTOCOL // SURVIVE THE FLIGHT</div>
+        <div class="mission-sub" id="missionProgress">Travel 500 meters · 0 / 500 M</div>
+        <div class="mission-track">
+            <div class="mission-fill" id="missionFill"></div>
+        </div>
+    </div>
+
+    <!-- 3. HACKATHON DEMO TOUR NARRATION BANNER -->
+    <div id="demoNarrationBanner">
+        <span id="demoNarrationText">HACKATHON DEMO: LAUNCHING ADVANCED 3D AIRCRAFT</span>
+    </div>
+
+    <!-- 4. MOBILE ON-SCREEN TOUCH CONTROLS -->
+    <div id="mobileControls">
+        <div class="mobile-lane-btns">
+            <button class="touch-btn" id="touchLaneLeft" aria-label="Move Left">◄</button>
+            <button class="touch-btn" id="touchLaneRight" aria-label="Move Right">►</button>
+        </div>
+        <div class="mobile-jump-dive-btns">
+            <button class="touch-btn" id="touchJump" aria-label="Jump Climb">▲</button>
+            <button class="touch-btn" id="touchDive" aria-label="Dive Subsonic">▼</button>
+            <button class="touch-btn boost-btn" id="touchBoost" aria-label="Nitro Boost">⚡</button>
+        </div>
+    </div>
+
+    <!-- 5. MAIN MENU & 3D HANGAR -->
+    <div id="mainMenu">
+        <div class="menu-top-bar">
+            <div class="menu-logo-group">
+                <div class="hackathon-badge">
+                    <span class="accent">HACKATHON</span> PREMIUM 3D EDITION
+                </div>
+                <h1 class="menu-title-main">COSMIC RUN</h1>
+                <div class="menu-title-sub">BEYOND THE UNIVERSE // THREE.JS EXPLORATION</div>
+            </div>
+
+            <div class="menu-stats-pill-group">
+                <div class="stat-pill coins">
+                    <span>🪙</span>
+                    <span id="menuCoinCount">0</span>
+                </div>
+                <div class="stat-pill best">
+                    <span>🏆</span>
+                    <span id="menuBestScore">0</span>
+                </div>
+                <div class="stat-pill level">
+                    <span>🚀</span>
+                    <span id="menuPlayerLevel">RANK 1</span>
+                </div>
+                <button class="hud-btn-icon" id="menuAudioBtn" title="Toggle Sound">🔊</button>
+            </div>
+        </div>
+
+        <!-- 3D Hangar Ship Carousel Preview -->
+        <div class="hangar-ship-selector">
+            <button class="btn-ship-nav" id="prevShipBtn" aria-label="Previous Ship">◄</button>
+            <div class="hangar-ship-title">
+                <h3 id="hangarShipName">X-1 COSMOS SCOUT</h3>
+                <p id="hangarShipPerk">NASA Prototype // Balanced Agility</p>
+                <button class="hangar-ship-action-btn" id="hangarShipActionBtn">EQUIPPED</button>
+            </div>
+            <button class="btn-ship-nav" id="nextShipBtn" aria-label="Next Ship">►</button>
+        </div>
+
+        <!-- Bottom Controls Cluster -->
+        <div class="menu-bottom-controls">
+            <div class="menu-feature-strip">
+                <div class="feature-chip">🌌 <b>10 Progressive</b> Sectors</div>
+                <div class="feature-chip">🛸 <b>5 Custom</b> Spaceships</div>
+                <div class="feature-chip">🎵 <b>Dynamic Synth</b> Music</div>
+                <div class="feature-chip">⚡ <b>60 FPS</b> WebGL</div>
+                <div class="feature-chip">🪐 <b>NASA/JPL</b> Telemetry</div>
+            </div>
+
+            <div class="btn-launch-cluster">
+                <button class="btn-launch" id="btnLaunchGame">
+                    <span>🚀</span> LAUNCH EXPEDITION
+                </button>
+                <button class="btn-demo-tour" id="btnLaunchDemoTour">
+                    <span>★</span> HACKATHON DEMO TOUR
+                </button>
+            </div>
+
+            <div class="menu-nav-row">
+                <button class="btn-menu-tab" id="btnOpenWorlds"><span>🪐</span> SECTORS (10)</button>
+                <button class="btn-menu-tab" id="btnOpenHangar"><span>🛸</span> FLEET HANGAR</button>
+                <button class="btn-menu-tab" id="btnOpenUpgrades"><span>⚡</span> UPGRADES</button>
+                <button class="btn-menu-tab" id="btnOpenLeaderboard"><span>👑</span> LEADERBOARD</button>
+                <button class="btn-menu-tab" id="btnOpenAchievements"><span>🏆</span> ACHIEVEMENTS</button>
+                <button class="btn-menu-tab" id="btnOpenDashboard"><span>📊</span> CAREER STATS</button>
+                <button class="btn-menu-tab" id="btnOpenEncyclopedia"><span>📚</span> ENCYCLOPEDIA</button>
+                <button class="btn-menu-tab" id="btnDailyReward"><span>🎁</span> DAILY BONUS</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 6. TACTICAL PAUSE MODAL -->
+    <div class="modal-overlay" id="pauseModal">
+        <div class="pause-dialog">
+            <div class="pause-header">
+                <h2>⏸ TACTICAL PAUSE</h2>
+                <p>ORBITAL DRIFT MODE // SIMULATION HALTED</p>
+            </div>
+
+            <div class="pause-stats-strip">
+                <div class="pause-stat-box">
+                    <div class="lbl">SECTOR</div>
+                    <div class="val" id="pauseSectorVal">EARTH</div>
+                </div>
+                <div class="pause-stat-box">
+                    <div class="lbl">DISTANCE</div>
+                    <div class="val" id="pauseDistanceVal">0 M</div>
+                </div>
+                <div class="pause-stat-box">
+                    <div class="lbl">SCORE</div>
+                    <div class="val" id="pauseScoreVal">0</div>
+                </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:10px; margin: 4px 0;">
+                <div class="pause-slider-row">
+                    <span>SOUND EFFECTS</span>
+                    <input type="range" id="sfxVolumeSlider" min="0" max="100" value="85">
+                </div>
+                <div class="pause-slider-row">
+                    <span>SYNTH MUSIC</span>
+                    <input type="range" id="musicVolumeSlider" min="0" max="100" value="70">
+                </div>
+                <div class="pause-slider-row">
+                    <span>GRAPHICS QUALITY</span>
+                    <button class="btn-card-action" id="toggleGraphicsQualityBtn" style="padding:4px 12px; font-size:10px;">HIGH (60 FPS)</button>
+                </div>
+            </div>
+
+            <div style="background:rgba(2,10,22,0.7); border:1px solid rgba(0,240,255,0.2); border-radius:8px; padding:10px; font-size:10px; font-family:var(--font-mono); color:#8be5ff;">
+                <b style="color:#fff;">CONTROLS:</b> [A/D] or [←/→] Lane Shift · [W/↑] Jump · [S/↓] Dive · [Space] Nitro Boost · Swipe / Tap on Mobile
+            </div>
+
+            <div class="pause-btn-stack">
+                <button class="btn-pause-action btn-pause-resume" id="btnResumeGame">▶ RESUME FLIGHT</button>
+                <button class="btn-pause-action btn-pause-restart" id="btnRestartGame">↺ RESTART EXPEDITION</button>
+                <button class="btn-pause-action btn-pause-hangar" id="btnQuitToHangar">🏠 RETURN TO HANGAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 7. GAME OVER SCREEN: NASA DEEP SPACE MISSION SUMMARY REPORT -->
+    <div class="modal-overlay" id="gameOverModal">
+        <div class="gameover-dialog" style="max-width: 620px;">
+            <div class="gameover-agency-badge">
+                <span class="nasa-insignia">NASA</span>
+                <span class="agency-title">DEEP SPACE EXPLORATION // FLIGHT ARCHIVE</span>
+            </div>
+            <div class="gameover-title" style="margin-top: 4px;">MISSION SUMMARY REPORT</div>
+            <div class="gameover-sub" id="gameoverReason">SIMULATED FLIGHT TELEMETRY ARCHIVED // MISSION CONCLUDED</div>
+            <div class="new-record-badge" id="newRecordBadge" style="display:none;">✦ NEW PERSONAL BEST! ✦</div>
+
+            <!-- Hidden compatibility elements to guarantee zero legacy query errors -->
+            <div style="display:none;" id="goDistance">0 M</div>
+            <div style="display:none;" id="goNearMisses">0</div>
+            <div style="display:none;" id="goMaxCombo">x1</div>
+            <div style="display:none;" id="goWarps">🌀 0</div>
+
+            <!-- 6-Metric NASA Mission Telemetry Grid -->
+            <div class="gameover-stats-grid">
+                <div class="gameover-stat-box">
+                    <div class="label">MISSION DISTANCE</div>
+                    <div class="val" id="goMissionKm" style="color:var(--cyan-glow); font-size:16px;">0 KM*</div>
+                    <div style="font-size:8px; color:#8be5ff; margin-top:2px;" id="goTrackDistance">0 M TRACK</div>
+                </div>
+                <div class="gameover-stat-box">
+                    <div class="label">TOTAL MISSION SCORE</div>
+                    <div class="val" id="goScore" style="color:var(--gold-glow);">0</div>
+                </div>
+                <div class="gameover-stat-box">
+                    <div class="label">CLOSEST MILESTONE</div>
+                    <div class="val" id="goClosestMilestone" style="font-size:14px; color:#fff;">🌍 LEO</div>
+                    <div style="font-size:8px; color:var(--cyan-glow);" id="goClosestMilestoneDist">2,000 KM REF*</div>
+                </div>
+                <div class="gameover-stat-box">
+                    <div class="label">NEXT DESTINATION</div>
+                    <div class="val" id="goNextMilestone" style="font-size:14px; color:#ffd060;">🌕 MOON</div>
+                    <div style="font-size:8px; color:#ffd060;" id="goNextMilestoneRemain">384,400 KM REMAINING</div>
+                </div>
+                <div class="gameover-stat-box">
+                    <div class="label">MISSION COMPLETION</div>
+                    <div class="val" id="goMissionCompletion" style="color:var(--green-glow);">0.0%</div>
+                    <div style="font-size:8px; color:#8be5ff;">OF SOLAR SYSTEM</div>
+                </div>
+                <div class="gameover-stat-box">
+                    <div class="label">ENERGY & COMBOS</div>
+                    <div class="val" id="goCoins" style="color:var(--gold-glow); font-size:15px;">🪙 0</div>
+                    <div style="font-size:8px; color:var(--purple-glow);" id="goMaxComboPill">MAX COMBO: x1 · WARPS: 0</div>
+                </div>
+            </div>
+
+            <!-- Planetary Exploration Milestones Achieved in Flight -->
+            <div class="gameover-milestones-section">
+                <div class="section-title">✦ PLANETARY EXPLORATION MILESTONES ACHIEVED IN FLIGHT</div>
+                <div class="gameover-milestone-pills" id="goMilestonesPills"></div>
+            </div>
+
+            <div class="gameover-xp-card">
+                <div style="display:flex; justify-content:space-between; font-size:11px; font-family:var(--font-mono);">
+                    <span>PILOT XP: <strong id="goXpEarned" style="color:var(--purple-glow);">+250 XP</strong></span>
+                    <span id="goLevelDisplay">RANK 1</span>
+                </div>
+                <div class="gameover-xp-bar">
+                    <div class="gameover-xp-fill" id="goXpFill"></div>
+                </div>
+            </div>
+
+            <!-- Scientific Accuracy Notice -->
+            <div class="gameover-scientific-notice">
+                <b style="color:#fff;">* EDUCATIONAL SPACE SIMULATION NOTICE:</b> Planetary and orbital distances represent mean astronomical reference distances from Earth based on NASA/JPL Planetary Fact Sheets. This is an interactive educational spaceflight simulation game.
+            </div>
+
+            <div class="gameover-btn-stack">
+                <button class="btn-card-action" id="btnPlayAgain" style="font-size:13px; padding:12px 24px;">▶ PLAY AGAIN</button>
+                <button class="btn-card-action" id="btnGoHome" style="background:rgba(4,24,48,0.85); border-color:var(--cyan-glow); color:#fff; font-size:13px; padding:12px 20px;">🏠 HANGAR</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- 8. WORLDS MODAL (10 SECTOR EXPEDITION) -->
+    <div class="modal-overlay" id="worldsModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h2><span>🪐</span> TEN PROGRESSIVE COSMIC SECTORS</h2>
+                <button class="modal-close-btn" id="closeWorldsModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <p style="font-size:11px; color:#8be5ff; margin-bottom:14px; font-family:var(--font-mono);">Fly through in-run Hyperspace Warp Portals or select an unlocked sector below to launch directly:</p>
+                <div class="worlds-grid" id="worldsGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 9. FLEET HANGAR MODAL -->
+    <div class="modal-overlay" id="garageModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h2><span>🛸</span> FLEET AEROSPACE HANGAR</h2>
+                <button class="modal-close-btn" id="closeGarageModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="worlds-grid" id="shipsGrid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 10. UPGRADES MODAL -->
+    <div class="modal-overlay" id="upgradesModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h2><span>⚡</span> SHIP SYSTEMS & QUANTUM UPGRADES</h2>
+                <button class="modal-close-btn" id="closeUpgradesModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; flex-direction:column; gap:12px;" id="upgradesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 11. LEADERBOARD MODAL -->
+    <div class="modal-overlay" id="leaderboardModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h2><span>👑</span> GALACTIC ACE PILOTS // LEADERBOARD</h2>
+                <button class="modal-close-btn" id="closeLeaderboardModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div class="leaderboard-callsign-box">
+                    <span style="font-size:12px; font-weight:800; color:#8be5ff; font-family:var(--font-mono);">PILOT CALLSIGN:</span>
+                    <input type="text" id="playerCallsignInput" maxlength="16" placeholder="CADET-01" value="NOVA-1">
+                    <button class="btn-card-action" id="btnSaveCallsign">UPDATE</button>
+                </div>
+                <div style="overflow-x:auto;">
+                    <table class="leaderboard-table">
+                        <thead>
+                            <tr>
+                                <th>RANK</th>
+                                <th>PILOT CALLSIGN</th>
+                                <th>SECTOR</th>
+                                <th>SPACECRAFT</th>
+                                <th>HIGH SCORE</th>
+                            </tr>
+                        </thead>
+                        <tbody id="leaderboardTableBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 12. ACHIEVEMENTS MODAL -->
+    <div class="modal-overlay" id="achievementsModal">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h2><span>🏆</span> PILOT BADGES & DISCOVERY AWARDS</h2>
+                <button class="modal-close-btn" id="closeAchievementsModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <div style="display:flex; flex-direction:column; gap:10px;" id="achievementsList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 13. CAREER STATS & NASA MISSION CONTROL DASHBOARD -->
+    <div class="modal-overlay" id="dashboardModal">
+        <div class="modal-dialog" style="max-width: 820px;">
+            <div class="modal-header">
+                <h2><span>📡</span> NASA MISSION CONTROL // FLIGHT TELEMETRY DASHBOARD</h2>
+                <button class="modal-close-btn" id="closeDashboardModal">✕</button>
+            </div>
+            <div class="modal-body">
+                <!-- Key NASA Telemetry Readout Grid -->
+                <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap:10px; margin-bottom:16px;">
+                    <div class="gameover-stat-box">
+                        <div class="label">LIFETIME MISSION DISTANCE</div>
+                        <div class="val" id="dashTotalDistance" style="color:var(--cyan-glow); font-size:15px;">0 KM*</div>
+                        <div style="font-size:8px; color:#8be5ff;" id="dashTotalMeters">0 M TRACK</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">HIGH SCORE / BEST RECORD</div>
+                        <div class="val" id="dashHighScore" style="color:var(--gold-glow);">0</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">CURRENT TARGET</div>
+                        <div class="val" id="dashCurrentPlanet" style="font-size:13px; color:#fff;">🌍 EARTH</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">NEXT MILESTONE DIST</div>
+                        <div class="val" id="dashDistToNext" style="font-size:12px; color:#ffd060;">384,400 KM</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">SOLAR SYSTEM PROGRESS</div>
+                        <div class="val" id="dashSystemProgress" style="color:var(--green-glow);">0.0%</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">PLANETS EXPLORED</div>
+                        <div class="val" id="dashPlanetsReachedCount" style="color:var(--purple-glow);">1 / 9</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">BEST FLIGHT DISTANCE</div>
+                        <div class="val" id="dashBestDistance" style="font-size:12px; color:#fff;">0 KM*</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">TOTAL EXPEDITIONS</div>
+                        <div class="val" id="dashTotalFlights">0</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">TOTAL COINS HARVESTED</div>
+                        <div class="val" id="dashTotalCoins" style="color:var(--gold-glow);">0</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">NEAR-MISS DODGES</div>
+                        <div class="val" id="dashTotalNearMisses" style="color:var(--green-glow);">0</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">WARP JUMPS</div>
+                        <div class="val" id="dashTotalWarps" style="color:var(--purple-glow);">0</div>
+                    </div>
+                    <div class="gameover-stat-box">
+                        <div class="label">MAX COMBO STREAK</div>
+                        <div class="val" id="dashMaxCombo" style="color:var(--gold-glow);">1X</div>
+                    </div>
+                </div>
+
+                <!-- Planetary Milestones Catalog -->
+                <h4 style="font-size:12px; font-weight:900; color:var(--cyan-glow); letter-spacing:1.5px; margin: 16px 0 8px; font-family:var(--font-mono);">
+                    ✦ PLANETARY EXPLORATION MILESTONES (NASA REFERENCE EPHEMERIS)
+                </h4>
+                <div id="dashMilestonesGrid" style="display:grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap:10px; margin-bottom:16px;"></div>
+
+                <!-- Scientific Accuracy Disclaimer -->
+                <div style="background:rgba(2,16,36,0.8); border:1px solid rgba(0,240,255,0.25); border-radius:8px; padding:10px; font-size:10px; font-family:var(--font-mono); color:#8be5ff; line-height:1.5; margin-bottom:16px;">
+                    <b style="color:#fff;">* SCIENTIFIC NOTE:</b> Planetary distances indicate mean astronomical reference distances from Earth or Sun based on NASA/JPL Solar System Dynamics for educational simulation purposes.
+                </div>
+
+                <h4 style="font-size:12px; font-weight:900; color:var(--cyan-glow); letter-spacing:1.5px; margin-bottom:10px; font-family:var(--font-mono);">
+                    ✦ NASA EXPLORATION RESEARCH CHALLENGES
+                </h4>
+                <div style="display:flex; flex-direction:column; gap:8px;" id="learningChallengesList"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 14. NASA SPACE ENCYCLOPEDIA MODAL -->
+    <div class="modal-overlay" id="encyclopediaModal">
+        <div class="modal-dialog" style="width:min(900px, 95vw);">
+            <div class="modal-header">
+                <h2><span>📚</span> NASA SOLAR SYSTEM ENCYCLOPEDIA</h2>
+                <button class="modal-close-btn" id="closeEncyclopediaModal">✕</button>
+            </div>
+            <div class="modal-body" style="display:grid; grid-template-columns: 200px 1fr; gap:16px;">
+                <div style="display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:55vh;" id="encyclopediaList"></div>
+                <div style="background:rgba(2,12,26,0.85); border:1px solid rgba(0,240,255,0.25); border-radius:10px; padding:16px; overflow-y:auto; max-height:55vh;" id="encyclopediaDetail"></div>
+            </div>
+        </div>
+    </div>
+
+
+
+</body>
+
+</html>
